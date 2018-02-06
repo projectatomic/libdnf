@@ -1258,14 +1258,18 @@ dnf_repo_check_internal(DnfRepo *repo,
                         GError **error)
 {
     DnfRepoPrivate *priv = GET_PRIVATE(repo);
-    const gchar *download_list[] = {
-        "primary",
-        "filelists",
-        "group",
-        "updateinfo",
-        "appstream",
-        "appstream-icons",
-        NULL};
+    g_autoptr(GPtrArray) download_list = g_ptr_array_new ();
+    g_ptr_array_add (download_list, (char*)"primary");
+    g_ptr_array_add (download_list, (char*)"group");
+    g_ptr_array_add (download_list, (char*)"updateinfo");
+    g_ptr_array_add (download_list, (char*)"appstream");
+    g_ptr_array_add (download_list, (char*)"appstream-icons");
+    /* This one is huge, and at least rpm-ostree jigdo mode doesn't require it.
+     * https://github.com/projectatomic/rpm-ostree/issues/1127
+     */
+    if (dnf_context_get_enable_filelists (priv->context))
+        g_ptr_array_add (download_list, (char*)"filelists");
+    g_ptr_array_add (download_list, NULL);
     const gchar *tmp;
     gboolean ret;
     LrYumRepo *yum_repo;
@@ -1308,7 +1312,7 @@ dnf_repo_check_internal(DnfRepo *repo,
         return FALSE;
     if (!lr_handle_setopt(priv->repo_handle, error, LRO_CHECKSUM, 1L))
         return FALSE;
-    if (!lr_handle_setopt(priv->repo_handle, error, LRO_YUMDLIST, download_list))
+    if (!lr_handle_setopt(priv->repo_handle, error, LRO_YUMDLIST, download_list->pdata))
         return FALSE;
     if (!lr_handle_setopt(priv->repo_handle, error, LRO_MIRRORLIST, NULL))
         return FALSE;
@@ -1743,6 +1747,15 @@ dnf_repo_update(DnfRepo *repo,
                            LRO_HMFCB, repo_mirrorlist_failure_cb);
     if (!ret)
         goto out;
+
+    /* see dnf_repo_check_internal */
+    if (!dnf_context_get_enable_filelists(priv->context)) {
+        const gchar *blacklist[] = { "filelists", NULL };
+        ret = lr_handle_setopt(priv->repo_handle, error,
+                               LRO_YUMBLIST, blacklist);
+        if (!ret)
+            goto out;
+    }
 
     lr_result_clear(priv->repo_result);
     dnf_state_action_start(state_local,

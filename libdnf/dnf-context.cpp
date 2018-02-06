@@ -109,6 +109,7 @@ typedef struct
     gboolean         check_disk_space;
     gboolean         check_transaction;
     gboolean         only_trusted;
+    gboolean         enable_filelists;
     gboolean         enable_yumdb;
     gboolean         keep_cache;
     gboolean         enrollment_valid;
@@ -192,6 +193,7 @@ dnf_context_init(DnfContext *context)
     priv->check_disk_space = TRUE;
     priv->check_transaction = TRUE;
     priv->enable_yumdb = TRUE;
+    priv->enable_filelists = TRUE;
     priv->state = dnf_state_new();
     priv->lock = dnf_lock_new();
     priv->cache_age = 60 * 60 * 24 * 7; /* 1 week */
@@ -709,6 +711,21 @@ dnf_context_get_yumdb_enabled(DnfContext *context)
 }
 
 /**
+ * dnf_context_get_enable_filelists:
+ * @context: a #DnfContext instance.
+ *
+ * Returns: %TRUE if filelists are enabled
+ *
+ * Since: 0.13.0
+ */
+gboolean
+dnf_context_get_enable_filelists (DnfContext     *context)
+{
+    DnfContextPrivate *priv = GET_PRIVATE(context);
+    return priv->enable_filelists;
+}
+
+/**
  * dnf_context_get_cache_age:
  * @context: a #DnfContext instance.
  *
@@ -979,6 +996,23 @@ dnf_context_set_keep_cache(DnfContext *context, gboolean keep_cache)
 }
 
 /**
+ * dnf_context_set_enable_filelists:
+ * @context: a #DnfContext instance.
+ * @enable_filelists: %TRUE to download and parse filelist metadata
+ *
+ * Enables or disables download and parsing of filelists.
+ *
+ * Since: 0.13.0
+ **/
+void
+dnf_context_set_enable_filelists (DnfContext     *context,
+                                  gboolean        enable_filelists)
+{
+    DnfContextPrivate *priv = GET_PRIVATE(context);
+    priv->enable_filelists = enable_filelists;
+}
+
+/**
  * dnf_context_set_only_trusted:
  * @context: a #DnfContext instance.
  * @only_trusted: %TRUE keep the packages after installing or updating
@@ -1198,7 +1232,7 @@ dnf_context_setup_sack(DnfContext *context, DnfState *state, GError **error)
     ret = dnf_sack_add_repos(priv->sack,
                              priv->repos,
                              priv->cache_age,
-                             DNF_SACK_ADD_FLAG_FILELISTS,
+                             priv->enable_filelists ? DNF_SACK_ADD_FLAG_FILELISTS : DNF_SACK_ADD_FLAG_NONE,
                              state,
                              error);
     if (!ret)
