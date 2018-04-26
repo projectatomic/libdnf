@@ -102,7 +102,8 @@ int hy_possibilities_next_module_form(HyPossibilities iter, HyModuleForm *out_mo
 
 HyQuery hy_subject_get_best_solution(HySubject subject, DnfSack *sack, HyForm *forms,
                                      HyNevra *nevra, gboolean icase, gboolean with_nevra,
-                                     gboolean with_provides, gboolean with_filenames);
+                                     gboolean with_provides, gboolean with_filenames,
+                                     gboolean with_src);
 HyQuery hy_subject_get_best_query(HySubject subject, DnfSack *sack, gboolean with_provides);
 
 /**
@@ -115,11 +116,12 @@ HyQuery hy_subject_get_best_query(HySubject subject, DnfSack *sack, gboolean wit
 * @param forms HyForm *forms or NULL
 * @param obsoletes If TRUE, obsoletes will be added to result
 * @param reponame Id of repo
+* @param with_src Include source packages
 * @return HySelector
 */
 HySelector hy_subject_get_best_sltr(HySubject subject, DnfSack *sack, HyForm *forms, bool obsoletes,
-                                    const char *reponame);
-HySelector hy_subject_get_best_selector(HySubject subject, DnfSack *sack);
+                                    const char *reponame, bool with_src);
+HySelector hy_subject_get_best_selector(HySubject subject, DnfSack *sack, bool with_src);
 int hy_nevra_possibility(const char *nevra_str, int re, HyNevra nevra);
 
 G_END_DECLS

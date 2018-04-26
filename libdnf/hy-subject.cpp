@@ -297,11 +297,14 @@ struct NevraToQuery {
  *
  * This code is based on rpm-software-management/dnf/subject.py:get_best_query() at git
  * revision: 1d83fdc0280ca4202281ef489afe600e2f51a32a
+ *
+ * Since then, it was amended to add a `with_src` flag to avoid finding source packages
+ * from provides.
  */
 HyQuery
 hy_subject_get_best_solution(HySubject subject, DnfSack *sack, HyForm *forms, HyNevra *nevra,
                              gboolean icase, gboolean with_nevra, gboolean with_provides,
-                             gboolean with_filenames)
+                             gboolean with_filenames, gboolean with_src)
 {
     int ret = 0;
     HyQuery query = NULL;
@@ -312,6 +315,8 @@ hy_subject_get_best_solution(HySubject subject, DnfSack *sack, HyForm *forms, Hy
             ret = hy_possibilities_next_nevra(iter, nevra);
             if (ret != -1) {
                 query = hy_nevra_to_query(*nevra, sack, icase);
+                if (!with_src)
+                    hy_query_filter(query, HY_PKG_ARCH, HY_NEQ, "src");
                 if (hy_query_is_not_empty(query)) {
                     hy_possibilities_free(iter);
                     return query;
@@ -322,6 +327,8 @@ hy_subject_get_best_solution(HySubject subject, DnfSack *sack, HyForm *forms, Hy
         hy_possibilities_free(iter);
         g_clear_pointer(nevra, hy_nevra_free);
         query = hy_query_create(sack);
+        if (!with_src)
+            hy_query_filter(query, HY_PKG_ARCH, HY_NEQ, "src");
         hy_query_filter(query, HY_PKG_NEVRA, HY_GLOB, subject);
         if (hy_query_is_not_empty(query))
             return query;
@@ -329,6 +336,8 @@ hy_subject_get_best_solution(HySubject subject, DnfSack *sack, HyForm *forms, Hy
     }
     if (with_provides) {
         query = hy_query_create(sack);
+        if (!with_src)
+            hy_query_filter(query, HY_PKG_ARCH, HY_NEQ, "src");
         hy_query_filter(query, HY_PKG_PROVIDES, HY_GLOB, subject);
         if (hy_query_is_not_empty(query))
             return query;
@@ -337,6 +346,8 @@ hy_subject_get_best_solution(HySubject subject, DnfSack *sack, HyForm *forms, Hy
 
     if (with_filenames && hy_is_file_pattern(subject)) {
         query = hy_query_create(sack);
+        if (!with_src)
+            hy_query_filter(query, HY_PKG_ARCH, HY_NEQ, "src");
         hy_query_filter(query, HY_PKG_FILE, HY_GLOB, subject);
         return query;
     }
@@ -349,13 +360,17 @@ hy_subject_get_best_solution(HySubject subject, DnfSack *sack, HyForm *forms, Hy
 
 HySelector
 hy_subject_get_best_sltr(HySubject subject, DnfSack *sack, HyForm *forms, bool obsoletes,
-                         const char *reponame)
+                         const char *reponame,
+                         bool with_src)
 {
     HyNevra nevra = NULL;
     HyQuery query = hy_subject_get_best_solution(subject, sack, forms, &nevra, FALSE, TRUE, TRUE,
-                                                 TRUE);
+                                                 TRUE, with_src);
     if (hy_query_is_not_empty(query)) {
-        hy_query_filter(query, HY_PKG_ARCH, HY_NEQ, "src");
+        // This inversion is because in the !with_src case, we already
+        // filtered above.
+        if (with_src)
+            hy_query_filter(query, HY_PKG_ARCH, HY_NEQ, "src");
         if (obsoletes && (nevra != NULL) && hy_nevra_has_just_name(nevra)) {
             DnfPackageSet *pset;
             pset = hy_query_run_set(query);
@@ -385,9 +400,9 @@ hy_subject_get_best_sltr(HySubject subject, DnfSack *sack, HyForm *forms, bool o
  *
  */
 HySelector
-hy_subject_get_best_selector(HySubject subject, DnfSack *sack)
+hy_subject_get_best_selector(HySubject subject, DnfSack *sack, bool with_src)
 {
-    return hy_subject_get_best_sltr(subject, sack, NULL, FALSE, NULL);
+    return hy_subject_get_best_sltr(subject, sack, NULL, FALSE, NULL, with_src);
 }
 
 #define MATCH_EMPTY(i) (matches[i].rm_so >= matches[i].rm_eo)
