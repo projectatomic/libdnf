@@ -318,7 +318,7 @@ get_best_parser(_SubjectObject *self, PyObject *args, PyObject *kwds, HyNevra *n
     gboolean c_with_filenames = with_filenames == NULL || PyObject_IsTrue(with_filenames);
     csack = sackFromPyObject(sack);
     HyQuery query = hy_subject_get_best_solution(self->pattern, csack, cforms, nevra, self->icase,
-                                                 c_with_nevra, c_with_provides, c_with_filenames);
+        c_with_nevra, c_with_provides, c_with_filenames, TRUE);
 
     return queryToPyObject(query, sack, &query_Type);
 }
@@ -366,7 +366,7 @@ get_best_selector(_SubjectObject *self, PyObject *args, PyObject *kwds)
     }
     DnfSack *csack = sackFromPyObject(sack);
     HySelector c_selector = hy_subject_get_best_sltr(self->pattern, csack, cforms, c_obsoletes,
-                                                     reponame);
+                                                     reponame, TRUE);
     PyObject *selector = SelectorToPyObject(c_selector, sack);
     Py_INCREF(selector);
     return selector;
