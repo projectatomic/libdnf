@@ -8,11 +8,14 @@ else()
 endif()
 
 OPTION(WITH_MAN "Enables hawkey man page generation" ON)
+OPTION(WITH_HTML "Enables hawkey HTML generation" ON)
 
+IF(WITH_HTML)
 ADD_CUSTOM_TARGET (doc-html
 		  PYTHONPATH=${CMAKE_BINARY_DIR}/src/python ${SPHINX_BUILD_NAME} -b html
 		  ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/html
 		  COMMENT "Building html documentation")
+ENDIF()
 IF(WITH_MAN)
 	ADD_CUSTOM_TARGET (doc-man ALL
 			  PYTHONPATH=${CMAKE_BINARY_DIR}/src/python ${SPHINX_BUILD_NAME} -b man
