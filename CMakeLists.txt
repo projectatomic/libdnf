@@ -29,6 +29,7 @@ INCLUDE_DIRECTORIES (${CMAKE_SOURCE_DIR})
 OPTION (ENABLE_SOLV_URPMREORDER "Build with support for URPM-like solution reordering?" OFF)
 option (ENABLE_RHSM_SUPPORT "Build with Red Hat Subscription Manager support?" OFF)
 
+OPTION (WITH_BINDINGS "Enables python/SWIG bindings" ON)
 OPTION (WITH_SWDB "Support for unified software database" ON)
 
 # hawkey dependencies
@@ -64,9 +65,11 @@ ENDIF()
 INCLUDE_DIRECTORIES(${GLIB_INCLUDE_DIRS})
 link_directories(${REPO_LIBRARY_DIRS})
 
+IF (WITH_BINDINGS)
 if (NOT PYTHON_DESIRED)
     set (PYTHON_DESIRED "2")
 endif()
+ENDIF()
 
 # rpm:
 FIND_LIBRARY (RPMDB_LIBRARY NAMES rpmdb)
@@ -91,6 +94,8 @@ ADD_SUBDIRECTORY (libdnf)
 ADD_SUBDIRECTORY (po)
 ENABLE_TESTING()
 ADD_SUBDIRECTORY (tests)
+IF (WITH_BINDINGS)
 ADD_SUBDIRECTORY (python/hawkey)
 ADD_SUBDIRECTORY (docs/hawkey)
 ADD_SUBDIRECTORY (docs/libdnf)
+ENDIF()
